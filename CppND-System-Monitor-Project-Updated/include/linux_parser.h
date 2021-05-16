@@ -22,7 +22,7 @@ const std::string kMemTotal{"MemTotal:"};
 const std::string kMemFree{"MemFree:"};
 const std::string kStatTotalProceses{"processes"};
 const std::string kStatRunningProceses{"procs_running"};
-const std::string kStatusVmSize{"VmSize:"};
+const std::string kStatusVmData{"VmData:"};
 const std::string kStatusUid{"Uid:"};
 
 // System

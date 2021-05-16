@@ -21,7 +21,8 @@ Process::Process(int pid)
       up_time_(LinuxParser::UpTime(pid)) {
   long seconds = LinuxParser::UpTime() - up_time_;
   long total_time = LinuxParser::ActiveJiffies(pid);
-  cpu_utilization_ = float(total_time) / float(seconds);
+  cpu_utilization_ =
+      static_cast<float>(total_time) / static_cast<float>(seconds);
 }
 // Return this process's ID
 int Process::Pid() const { return pid_; }

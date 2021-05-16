@@ -58,7 +58,7 @@ vector<int> LinuxParser::Pids() {
       // Is every character of the name a digit?
       filename = p.path().filename();
       if (std::all_of(filename.begin(), filename.end(), isdigit)) {
-        pids.push_back(stoi(filename));
+        pids.emplace_back(stoi(filename));
       }
     }
   }
@@ -158,7 +158,7 @@ vector<string> LinuxParser::CpuUtilization() {
     std::istringstream linestream(line);
     linestream >> value;
     while (linestream >> value) {
-      jiffies.push_back(value);
+      jiffies.emplace_back(value);
     }
   }
   return jiffies;
@@ -229,8 +229,11 @@ string LinuxParser::Ram(int pid) {
     while (std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
-      if (key == kStatusVmSize) {
-        memory = value;
+      // Using VmData instead of VmSize in order to get the exact physical
+      // memory instead of the virtual memory
+      if (key == kStatusVmData) {
+        // Convert from KB to MB
+        memory = std::to_string(std::stoi(value) / 1024);
         break;
       }
     }

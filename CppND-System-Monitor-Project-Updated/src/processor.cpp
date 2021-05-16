@@ -11,8 +11,9 @@ float Processor::Utilization() {
   total_old = PrevTotal();
   idle_old = PrevIdle();
   Update(idle_new, active_new, total_new);
-  float total_diff = float(total_new) - float(total_old);
-  float idle_diff = float(idle_new) - float(idle_old);
+  float total_diff =
+      static_cast<float>(total_new) - static_cast<float>(total_old);
+  float idle_diff = static_cast<float>(idle_new) - static_cast<float>(idle_old);
   // Current CPU memory usage
   return (total_diff - idle_diff) / total_diff;
 }
