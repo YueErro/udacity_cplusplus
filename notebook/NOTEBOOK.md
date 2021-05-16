@@ -16,6 +16,9 @@ Some notes taken during this C++ course.
   * [Overloading](#overloading)
   * [Overriding](#overriding)
     * [Virtual functions](#virtual-functions)
+* [Templates](#templates)
+  * [Deduction](#deduction)
+  * [Class templates](#class-templates)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -29,7 +32,7 @@ C++ supports two notions of immutability:
 * `const`: Run time
 * `constexpr`: Compile time
 
-_If a variable is set as `static` and initialized inside a class, it has to be `constexpr`.
+If a variable is set as `static` and initialized inside a class, it has to be `constexpr`.
 
 ### Initializer lists
 Initializer lists initialize member variables to specific values, just before the class constructor runs. This initialization ensures that class members are automatically initialized when an instance of the class is created, before the object is created.
@@ -89,10 +92,11 @@ There is no hard and fast rule about when to prefer composition over inheritance
 class Vehicle
 {
 };
-class Car : public Vehicle
+class Car : public Vehicle // , public anotherClass --> multiple inheritance
 {
 };
 ```
+_Be careful, it may conflict if a class derives from multiple base classes that derives from the same abstract class._
 
 ##### Friends
 The `friend` keyword grants access to the private members of a class.
@@ -141,7 +145,7 @@ It happens when there is more than one function named the same with different pa
 #### Overriding
 
 ##### Virtual functions
-Virtual functions are a polymorphic feature. These functions are declared (and possibly defined, implemented) in a base class, and can be overridden by derived classes.
+Virtual functions are a polymorphic feature. These functions are declared (and possibly defined, implemented) in a base class, and can be overridden by derived classes. A derived class overrides that virtual function by defining its own implementation with an identical function signature
 
 Virtual functions can be defined by derived classes, but this is not required. However, if we mark the virtual function with `= 0` in the base class, then we are declaring the function to be a pure virtual function. This means that the base class does not define this function. A derived class must define this function, or else the derived class will be abstract.
 ```cpp
@@ -163,9 +167,55 @@ class Derived: public Base
   }
   // It can be set as virtual in order to follow the same rule in such a case
   // that we have more derived classes from this Derived class
-  void virtualPurePrint() overridden
+  void virtualPurePrint() override
   {
     std::cout << "I'm a derived virtual pure overridden print and I am mandatory\n";
   }
+};
+```
+_Specifying a function as `override` is good practice, as it empowers the compiler to verify the code, and communicates the intention of the code to future users._
+
+### Templates
+Templates in C++ is support for generic programming. Basically, a template is something you can parameterize with types or values.
+
+#### Deduction
+Deduction occurs when you instantiate an object without explicitly identifying the types. Instead, the compiler "deduces" the types.
+```cpp
+#include <assert.h>
+
+template <typename T> T Max(T a, T b)
+{
+    return a > b ? a : b;
+};
+
+int main()
+{
+  // No need to specify the type such us Max<int>(10, 50)
+  assert(Max(10, 50) == 50);
+  assert(Max(5.7, 1.436246) == 5.7);
+}
+```
+
+#### Class templates
+Class templates can declare and implement generic attributes for use by generic methods. These templates can be very useful when building classes that will serve multiple purposes.
+```cpp
+#include <string>
+#include <sstream>
+
+template <typename KeyType, typename ValueType>
+class Mapping
+{
+public:
+  Mapping(KeyType key, ValueType value) : key(key), value(value)
+  {
+  }
+  std::string Print() const
+  {
+    std::ostringstream stream;
+    stream << key << ": " << value;
+    return stream.str();
+  }
+  KeyType key;
+  ValueType value;
 };
 ```
