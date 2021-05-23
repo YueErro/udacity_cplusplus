@@ -19,7 +19,11 @@ Some notes taken during this C++ course.
 * [Templates](#templates)
   * [Deduction](#deduction)
   * [Class templates](#class-templates)
-* [Structure of computer memory](#structure-of-computer-memory)
+* [Computer memory](#computer-memory)
+  * [Structure](#structure)
+  * [Types](#types)
+* [Cache memory](#cache-memory)
+* [Virtual memory](#virtual-memory)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -221,7 +225,8 @@ public:
 };
 ```
 
-### Structure of computer memory
+### Computer memory
+#### Structure
 Information and computers are store as a sequence of zeros and ones called bits.
 
 A `bit` is the smallest piece of information we can have in computing. And eight bits are grouped into something called a `byte`. Bits and bytes are expressed in a Base 2 (binary) number system, which is an alternative to the Base 10 system we are familiar with. There is also a Base 16 (hexadecimal) system, which plays an important role in memory management.
@@ -242,3 +247,33 @@ The following figure shows an ASCII (_American Standard Code for Information Int
 ![](images/ascii_table.png)
 
 In addition to the decimal number (column "Dec") and the binary number, the ASCII table provides a third number for each character (column "Hex").
+
+#### Types
+
+Common memory types:
+* RAM / ROM
+* Cache (L1, L2)
+* Registers
+* Virtual Memory
+* Hard Disks, USB drives
+
+When the CPU of a computer needs to access memory, it wants to do this with minimal latency. Also, as large amounts of information need to be processed, the available memory should be sufficiently large with regard to the tasks we want to accomplish.
+
+Regrettably though, low latency and large memory are not compatible with each other (at least not at a reasonable price). In practice, the decision for low latency usually results in a reduction of the available storage capacity (and vice versa). This is the reason why a computer has multiple memory types that are arranged hierarchically.
+
+![](images/cm_latency_and_size.png)
+
+The CPU and its ultra-fast (but small) registers used for short-term data storage reside at the top of the pyramid. Below are Cache and RAM, which belong to the category of temporary memory which quickly looses its content once power is cut off. Finally, there are permanent storage devices such as the ROM, hard drives as well as removable drives such as USB sticks.
+
+CPU specifications:
+1. The **bit size** of the CPU decides how many bytes of data it can access in RAM memory at the same time. A 16-bit CPU can access 2 bytes (with each byte consisting of 8 bit) while a 64-bit CPU can access 8 bytes at a time.
+2. The **processing speed** of the CPU is measured in Gigahertz or Megahertz and denotes the number of operations it can perform in one second.
+
+From processing speed and bit size, the data rate required to keep the CPU busy can easily be computed by multiplying bit size with processing speed. With modern CPUs and ever-increasing speeds, the available RAM in the market will not be fast enough to match the CPU data rate requirements.
+
+The idea is to ensure that the CPU is running smoothly without too many white cycles. To make this work, data that is currently needed has to be high up in the hierarchy, while data that is seldomly needed should reside at the lower end.
+
+### Cache memory
+
+
+### Virtual memory
