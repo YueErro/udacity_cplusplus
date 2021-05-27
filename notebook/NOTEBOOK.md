@@ -274,6 +274,21 @@ From processing speed and bit size, the data rate required to keep the CPU busy 
 The idea is to ensure that the CPU is running smoothly without too many white cycles. To make this work, data that is currently needed has to be high up in the hierarchy, while data that is seldomly needed should reside at the lower end.
 
 ### Cache memory
+Cache memory is much faster but also significantly smaller than standard RAM. It holds the data that will (or might) be used by the CPU more often. It plays an intermediary role between fast CPU and slow RAM and hard disk. The figure below gives a rough overview of a typical system architecture:
 
+![](images/cache_system_architecture.png)
+System architecture diagram showing caches, ALU (Arithmetic Logic Unit), main memory, and the buses connected each component.
+
+The central CPU chip is connected to the outside world by a number of buses. There is a cache bus, which leads to a block denoted as L2 cache, and there is a system bus as well as a memory bus that leads to the computer main memory. The latter holds the comparatively large RAM while the L2 cache as well as the L1 cache are very small with the latter also being a part of the CPU itself.
+
+![](images/cpu_chip.png)
+
+1. **Level 1 cache** is the fastest and smallest memory type in the cache hierarchy. Mostly it is in the range of 16 to 64 kBytes, where the memory areas for instructions and data are separated from each other (L1i and L1d, where "i" stands for "instruction" and "d" stands for "data". The importance of the L1 cache grows with increasing speed of the CPU. In the L1 cache, the most frequently required instructions and data are buffered. This cache avoids delays in data transmission and helps to make optimum use of the CPU's capacity.
+2. **Level 2 cache** is located close to the CPU and has a direct connection to it. The information exchange between L2 cache and CPU is managed by the L2 controller on the computer main board. The size of the L2 cache is usually at or below 2 megabytes. On modern multi-core processors, the L2 cache is often located within the CPU itself. With a higher clock speed, individual programs run faster, especially those with high computing requirements. As soon as several programs run simultaneously, a larger cache is advantageous (most preferred).
+3. **Level 3 cache** is shared among all cores of a multicore processor. With the L3 cache, the cache coherence protocol of multicore processors can work much faster. This protocol compares the caches of all cores to maintain data consistency so that all processors have access to the same data at the same time. It is intended to simplify and accelerate the cache coherence protocol and the data exchange between the cores.
+
+Programmers can exploit two principles to increase runtime performance:
+1. **Temporal locality** means that address ranges that are accessed are likely to be used again in the near future.
+2. **Spatial locality** means that after an access to an address range, the next access to an address in the immediate vicinity is highly probable (e.g. in arrays). In the course of time, memory addresses that are very close to each other are accessed again multiple times.
 
 ### Virtual memory
