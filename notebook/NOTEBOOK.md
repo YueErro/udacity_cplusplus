@@ -31,6 +31,9 @@ Some notes taken during this C++ course.
   * [Dynamic memory allocation (Heap)](#dynamic-memory-allocation-heap)
   * [Stack memory](#stack-memory)
   * [Heap memory](#heap-memory)
+    * [`malloc()` and `free()`](#malloc-and-free)
+    * [`new` and `delete`](#new-and-delete)
+  * [Typical memory management problems](#typica-memory-management-problems)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -348,7 +351,7 @@ In the following, a short list of key properties of the stack is listed:
 #### Heap memory
 It is an important resource available to programs to store data. The heap memory grows upwards while the stack grows in the opposite direction. We have seen in the last lesson that the automatic stack memory shrinks and grows with each function call and local variable. As soon as the scope of a variable is left, it is automatically deallocated and the stack pointer is shifted upwards accordingly.
 
-Heap memory is different in many ways: The programmer can request the allocation of memory by issuing a command such as `malloc` or `new`. This block of memory will remain allocated until the programmer explicitly issues a command such as `free` or `delete`. The huge advantage of heap memory is the high degree of control a programmer can exert, albeit at the price of greater responsibility since memory on the heap must be actively managed.
+Heap memory is different in many ways: The programmer can request the allocation of memory by issuing a command such as `malloc()` or `new`. This block of memory will remain allocated until the programmer explicitly issues a command such as `free()` or `delete`. The huge advantage of heap memory is the high degree of control a programmer can exert, albeit at the price of greater responsibility since memory on the heap must be actively managed.
 
 Properties of heap memory:
 1. As opposed to local variables on the stack, memory can now be allocated in an arbitrary scope (e.g. inside a function) without it being deleted when the scope is left. Thus, as long as the address to an allocated block of memory is returned by a function, the caller can freely use it.
@@ -360,3 +363,46 @@ Properties of heap memory:
 Memory on the heap can become fragmented and a classic symptom is that you try to allocate a large block and you can’t, even though you appear to have enough memory free. On systems with virtual memory however, this is less of a problem, because large allocations only need to be contiguous in virtual address space, not in physical address space.
 
 When memory is heavily fragmented however, memory allocations will likely take longer because the memory allocator has to do more work to find a suitable space for the new object.
+
+##### `malloc()` and `free()`
+To reserve memory on the heap, one of the two functions `malloc()` (stands for Memory Allocation) or `calloc()` (stands for Cleared Memory Allocation) is used. The header file `stdlib.h` or `malloc.h` must be included to use the functions.
+
+```cpp
+pointer_name = (cast-type*) malloc(size);
+pointer_name = (cast-type*) calloc(num_elems, size_elem);
+```
+
+`malloc()` is used to dynamically allocate a single large block of memory with the specified size. It returns a pointer of type `void` which needs to be cast into the appropiate data type it points to.
+
+`calloc()` is used to dynamically allocate the specified number of blocks of memory of the specified type. It initializes each block with a default value '0'.
+
+Both functions return a pointer of type `void` which can be cast into a pointer of any form. If the space for the allocation is insufficient, a NULL pointer is returned.
+
+One of the advantages of these method is that you can adapt the size of the memory block after it has been allocated with the `realloc` function.
+
+```cpp
+pointer_name = (cast-type*) realloc( (cast-type*)old_memblock, new_size );
+```
+
+If the RAM memory is completely used up, the data is swapped out to the hard disk, which slows down the computer significantly.
+
+The `free()` function releases the reserved memory area so that it can be used again or made available to other programs.
+1. `free()` can only free memory that was reserved with `malloc()` or `calloc()`.
+2. `free()` can only release memory that has not been released before. Releasing the same block of memory twice will result in an error.
+
+##### `new` and `delete`
+They are operators while `malloc()` and `free()` are functions taken from C and thus, they can be overloaded. The major scenarios where it make sense to do it:
+1. The overloaded new operator function allows to **add additional parameters**. Therefore, a class can have multiple overloaded new operator functions. This gives the programmer more flexibility in customizing the memory allocation for objects.
+2. Overloaded the new and delete operators provides an easy way to **integrate a mechanism similar to garbage collection** capabilities (such as in Java), as we will shorty see later in this course.
+3. By adding **exception handling** capabilities into new and delete, the code can be made more robust.
+4. It is very easy to add customized behavior, such as overwriting deallocated memory with zeros in order to increase the security of critical application data.
+
+Do not use `new` and `delete` in application code. They belong in the implementation of your abstractions. So if you use a `vector` or a `string`, don't use `new` and `delete`. It's hidden inside the abstraction. That's where the pointers live, in the part and on the fraction that actually touches hardware.
+
+#### Typical memory management problems
+Typical errors in memory management:
+1. **Memory leaks** occur when data is allocated on the heap at runtime, but not properly deallocated. A program that forgets to clear a memory block is said to have a memory leak - this may be a serious problem or not, depending on the circumstances and on the nature of the program.
+2. **Buffer overruns** occur when memory outside the allocated limits is overwritten and thus corrupted. One of the resulting problems is that this effect may not become immediately visible. When a problem finally does occur, cause and effect are often hard to discern. E.g. segmentation fault.
+3. **Uninitialized memory**. Depending on the C++ compiler, data structures are sometimes initialized (most often to zero) and sometimes not. So when allocating memory on the heap without proper initialization, it might sometimes contain garbage that can cause problems.
+4. **Incorrect pairing of allocation and deallocation**. Freeing a block of memory more than once will cause a program to crash. This can happen when a block of memory is freed that has never been allocated or has been freed before. Such behavior could also occur when improper pairings of allocation and deallocation are used such as using `malloc()` with `delete` or `new` with `free()`.
+5. **Invalid memory access** error occurs then trying to access a block of heap memory that has not yet or has already been deallocated.
