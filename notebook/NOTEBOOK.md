@@ -34,6 +34,9 @@ Some notes taken during this C++ course.
     * [`malloc()` and `free()`](#malloc-and-free)
     * [`new` and `delete`](#new-and-delete)
   * [Typical memory management problems](#typica-memory-management-problems)
+  * [Copy semantics](#copy-semantics)
+  * [Lvalues and Rvalues](#lvalues-and-rvalues)
+  * [Move semantics](#move-semantics)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -406,3 +409,95 @@ Typical errors in memory management:
 3. **Uninitialized memory**. Depending on the C++ compiler, data structures are sometimes initialized (most often to zero) and sometimes not. So when allocating memory on the heap without proper initialization, it might sometimes contain garbage that can cause problems.
 4. **Incorrect pairing of allocation and deallocation**. Freeing a block of memory more than once will cause a program to crash. This can happen when a block of memory is freed that has never been allocated or has been freed before. Such behavior could also occur when improper pairings of allocation and deallocation are used such as using `malloc()` with `delete` or `new` with `free()`.
 5. **Invalid memory access** error occurs then trying to access a block of heap memory that has not yet or has already been deallocated.
+
+#### Copy semantics
+Copy policies:
+1. Default copying
+2. No copying
+3. Exclusive ownership
+4. Deep copying
+5. Shared ownership
+
+Using the **default copying** constructor to copy an object that performs a allocation in the heap and a deallocation in the destructor, will end up crashing. When the object goes out of scope, it releases the memory resource and the copy will do the same which causes the program to crash as the pointer is now referencian an invalid are of memory, which has already been freed by the object.
+
+The default behavior of both copy constructor and assignment operator is to perform a _shallow copy_.
+
+![](images/shallow_copy.png)
+
+To avoid such situation, **exclusive ownership policy** can be used. This policy states that whenever a resource managemnt object is copied, the resource handle is transferred from the source pointer to the destination pointer. In the process, the source pointer is set to `nullptr` to make ownership exclusive. However, one problem in this implementation is that for a short time there are effectively two valid handles to the same resource - after the handle has been copied and before it is set to `nullptr`. In concurrent programs, this would cause a data race for the resource.
+
+To avoid such situation, **deep copying policy** can be used. The idea is to allocate proprietary memory in the destination object and then to copy the content to which the source object handle is pointing into the newly allocated block of memory. This way, the content is preserved during copy or assignment.
+
+![](images/deep_copy.png)
+
+However, this approach increases the memory demands and the uniqueness of the data is lost.
+
+To avoid such situation, **shared ownership policy** can be used. The idea is to perform a copy or assignment similar to the default behavior, i.e. copying the handle instead of the content (as with a shallow copy) while at the same time keeping track of the number of instances that also point to the same resource. Each time an instance goes out of scope, the counter is decremented. Once the last object is about to be deleted, it can safely deallocate the memory resource. E.g. shared pointers
+
+**The rule of three**: if you change either the destructor or the copy constructor or the assignement operator, you better change them all to guaranteed a consistent memory management copying policy.
+
+#### Lvalues and Rvalues
+![](images/c++_expressions.png)
+
+* **Lvalues** have an address that can be accessed. They are expressions whose evaluation by the compiler determines the identity of objects or functions.
+
+* **Prvalues** do not have an address that is accessible directly. They are temporary expressions used to initialize objects or compute the value of the operand of an operator. For now on, let refer to **prvalues** as **rvalues**
+
+The two characters `l` and `r` are originally derived from the perspective of the assignment operator `=`, which always expects a rvalue on the right, and which it assigns to a lvalue on the left. In this case, the `l` stands for left and `r` for right.
+```cpp
+// lvalue = rvalue;
+int i = 42;  
+```
+In more general terms, an lvalue is an entity that points to a specific memory location. An rvalue is usually a short-lived object, which is only needed in a narrow local scope. To simplify things a little, one could think of lvalues as _named containers_ for rvalues.
+
+An **lvalue reference** can be considered as an alternative name for an object. It is a reference that binds to an lvalue and is declared using an optional list of specifiers followed by the reference declarator `&`. One of the primary use-cases for it is the pass-by-reference semantics in function calls.
+
+An **rvalue reference** can be identified from the double ampersand `&&` after a type name. With this operator, it is possible to store and even modify an rvalue.
+```cpp
+int i = 1;
+int j = 2;
+int k = i + j; // not efficient manner
+// rvalue reference
+int &&l = i + j; // very efficient manner
+```
+One of the most important aspects of rvalue references is that they pave the way for _move semantics_. Move semantics and rvalue references make it possible to write code that transfers resources such as dynamically allocated memory from one object to another in a very efficient manner and also supports the concept of exclusive ownership
+
+#### Move semantics
+```cpp
+#include <iostream>
+
+void myFunction(int &&val)
+{
+  std::cout << "val = " << val << std::endl;
+}
+
+int main()
+{
+  myFunction(42);
+  return 0;
+}
+```
+The important message of the function argument of `myFunction` to the programmer is: The object that binds to the rvalue reference `&&val` is yours, it is not needed anymore within the scope of the caller (which is main). As discussed in the previous section on rvalue references, this is interesting from two perspectives:
+1. Passing values like this **improves performance** as no temporary copy needs to be made anymore and
+2. **Ownership changes**, since the object the reference binds to has been abandoned by the caller and now binds to a handle which is available only to the receiver. This could not have been achieved with lvalue references as any change to the object that binds to the lvalue reference would also be visible on the caller side.
+
+_rvalue references are themselves lvalues._
+```cpp
+int i = 23;
+// WRONG!!
+myFunction(i)
+// CORRECT!!
+myFunction(std::move(i));
+```
+Using `std::move` we state that in the scope of main we will not use i anymore, which now exists only in the scope of `myFunction`.
+
+**The rule of five**: if you have to write one of the functions listed below then you should consider implementing all of them with a proper resource management policy in place:
+1. The **destructor**: Responsible for freeing the resource once the object it belongs to goes out of scope.
+2. The **assignment operator**: The default assignment operation performs a member-wise shallow copy, which does not copy the content behind the resource handle. If a deep copy is needed, it has be implemented by the programmer.
+3. The **copy constructor**: As with the assignment operator, the default copy constructor performs a shallow copy of the data members. If something else is needed, the programmer has to implement it accordingly.
+4. The **move constructor**: Because copying objects can be an expensive operation which involves creating, copying and destroying temporary objects, rvalue references are used to bind to an rvalue. Using this mechanism, the move constructor transfers the ownership of a resource from a (temporary) rvalue object to a permanent lvalue object.
+5. The **move assignment operator**: With this operator, ownership of a resource can be transferred from one object to another.
+
+**When are move semantics used?**
+1. Where heavy-weight objects need to be passed around in a program. Copying these without move semantics can cause series performance issues. The idea in this scenario is to create the object a single time and then "simply" move it around using rvalue references and move semantics.
+2. Where ownership needs to be transferred. The primary difference to shared references is that with move semantics we are not sharing anything but instead we are ensuring through a smart policy that only a single object at a time has access to and thus owns the resource.
