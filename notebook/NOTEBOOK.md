@@ -37,6 +37,7 @@ Some notes taken during this C++ course.
   * [Copy semantics](#copy-semantics)
   * [Lvalues and Rvalues](#lvalues-and-rvalues)
   * [Move semantics](#move-semantics)
+* [Passing smart pointers](#passing-smart-pointers)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -501,3 +502,19 @@ Using `std::move` we state that in the scope of main we will not use i anymore, 
 **When are move semantics used?**
 1. Where heavy-weight objects need to be passed around in a program. Copying these without move semantics can cause series performance issues. The idea in this scenario is to create the object a single time and then "simply" move it around using rvalue references and move semantics.
 2. Where ownership needs to be transferred. The primary difference to shared references is that with move semantics we are not sharing anything but instead we are ensuring through a smart policy that only a single object at a time has access to and thus owns the resource.
+
+### Passing smart pointers
+```cpp
+// Raw pointer
+void f( object* );
+// Reference
+void f( object& );
+// Use move semantics to passing an object to a function so that the function takes ownership of the object
+void f( unique_ptr<object> );
+// Modify a unique pointer and re-use it in the context of the caller
+void f( unique_ptr<object>& );
+// Store and share ownership of an object on the heap
+void f( shared_ptr<object> );
+// Need to modify shared pointers and re-use them in the context of the caller 
+void f( shared_ptr<object>& );
+```
