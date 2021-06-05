@@ -511,10 +511,23 @@ void f( object* );
 void f( object& );
 // Use move semantics to passing an object to a function so that the function takes ownership of the object
 void f( unique_ptr<object> );
+std::unique_ptr<std::string> unique_str = std::make_unique<std::string>("Unique pointer");
+f(std::move(unique_str));
 // Modify a unique pointer and re-use it in the context of the caller
 void f( unique_ptr<object>& );
 // Store and share ownership of an object on the heap
 void f( shared_ptr<object> );
-// Need to modify shared pointers and re-use them in the context of the caller 
+// Need to modify shared pointers and re-use them in the context of the caller
 void f( shared_ptr<object>& );
+// Convert weak pointer into shared pointer
+std::shared_ptr<std::string> shared_str = unique_str.lock()
+if (shared_str)
+{
+  std::cout << *shared_str << "\n";
+}
+else
+{
+  std::cout << "Weak pointer is expired\n";
+}
+
 ```
