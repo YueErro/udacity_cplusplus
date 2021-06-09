@@ -117,9 +117,6 @@ ChatBotPanelDialog::ChatBotPanelDialog(wxWindow *parent, wxWindowID id)
   // allow for PNG images to be handled
   wxInitAllImageHandlers();
 
-  //// STUDENT CODE
-  ////
-
   // create chat logic instance
   _chatLogic = std::make_unique<ChatLogic>();
 
@@ -128,9 +125,6 @@ ChatBotPanelDialog::ChatBotPanelDialog(wxWindow *parent, wxWindowID id)
 
   // load answer graph from file
   _chatLogic->LoadAnswerGraphFromFile(dataPath + "src/answergraph.txt");
-
-  ////
-  //// EOF STUDENT CODE
 }
 
 ChatBotPanelDialog::~ChatBotPanelDialog()
