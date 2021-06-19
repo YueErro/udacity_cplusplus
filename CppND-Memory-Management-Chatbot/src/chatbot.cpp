@@ -15,6 +15,7 @@ ChatBot::ChatBot()
   _image = nullptr;
   _chatLogic = nullptr;
   _rootNode = nullptr;
+  _currentNode = nullptr;
 }
 
 // constructor WITH memory allocation
@@ -25,6 +26,7 @@ ChatBot::ChatBot(std::string filename)
   // invalidate data handles
   _chatLogic = nullptr;
   _rootNode = nullptr;
+  _currentNode = nullptr;
 
   // load image into heap memory
   _image = new wxBitmap(filename, wxBITMAP_TYPE_PNG);
@@ -44,7 +46,7 @@ ChatBot::~ChatBot()
 
 ChatBot::ChatBot(const ChatBot &source)
 {
-  std::cout << "Copy constructor" << std::endl;
+  std::cout << "ChatBot Copy constructor" << std::endl;
   _image = new wxBitmap(*source._image);
   _currentNode = source._currentNode;
   _rootNode = source._rootNode;
@@ -53,7 +55,7 @@ ChatBot::ChatBot(const ChatBot &source)
 
 ChatBot &ChatBot::operator=(const ChatBot &source)
 {
-  std::cout << "Copy assignment operator" << std::endl;
+  std::cout << "ChatBot Copy assignment operator" << std::endl;
   if (&source != this)
   {
     _image = new wxBitmap(*source._image);
@@ -67,7 +69,7 @@ ChatBot &ChatBot::operator=(const ChatBot &source)
 
 ChatBot::ChatBot(ChatBot &&source) noexcept
 {
-  std::cout << "Move constructor" << std::endl;
+  std::cout << "ChatBot Move constructor" << std::endl;
   _image = source._image;
   _currentNode = source._currentNode;
   _rootNode = source._rootNode;
@@ -81,7 +83,7 @@ ChatBot::ChatBot(ChatBot &&source) noexcept
 
 ChatBot &ChatBot::operator=(ChatBot &&source) noexcept
 {
-  std::cout << "Move assignment operator" << std::endl;
+  std::cout << "ChatBot Move assignment operator" << std::endl;
   if (&source != this)
   {
     _image = source._image;
@@ -143,6 +145,8 @@ void ChatBot::SetCurrentNode(GraphNode *node)
   std::mt19937 generator(int(std::time(0)));
   std::uniform_int_distribution<int> dis(0, answers.size() - 1);
   std::string answer = answers.at(dis(generator));
+
+  _chatLogic->SetChatbotHandle(this);  // update chatBot for chatLogic
 
   // send selected node answer to user
   _chatLogic->SendMessageToUser(answer);
