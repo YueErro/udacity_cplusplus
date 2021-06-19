@@ -105,9 +105,10 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
           if (type->second == "NODE")
           {
             // check if node with this ID exists already
-            auto newNode = std::find_if(
-                _nodes.begin(), _nodes.end(),
-                [&id](std::unique_ptr<GraphNode> &node) { return node->GetID() == id; });
+            auto newNode = std::find_if(_nodes.begin(), _nodes.end(),
+                                        [&id](const std::unique_ptr<GraphNode> &node) {
+                                          return node->GetID() == id;
+                                        });
 
             // create new element if ID does not yet exist
             if (newNode == _nodes.end())
@@ -138,12 +139,12 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
               // get iterator on incoming and outgoing node via ID search
               auto parentNode =
                   std::find_if(_nodes.begin(), _nodes.end(),
-                               [&parentToken](std::unique_ptr<GraphNode> &node) {
+                               [&parentToken](const std::unique_ptr<GraphNode> &node) {
                                  return node->GetID() == std::stoi(parentToken->second);
                                });
               auto childNode =
                   std::find_if(_nodes.begin(), _nodes.end(),
-                               [&childToken](std::unique_ptr<GraphNode> &node) {
+                               [&childToken](const std::unique_ptr<GraphNode> &node) {
                                  return node->GetID() == std::stoi(childToken->second);
                                });
 

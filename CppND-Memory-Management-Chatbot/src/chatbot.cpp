@@ -79,6 +79,12 @@ ChatBot::ChatBot(ChatBot &&source) noexcept
   source._currentNode = nullptr;
   source._rootNode = nullptr;
   source._chatLogic = nullptr;
+
+  if (source._image != NULL)  // Attention: wxWidgets used NULL and not nullptr
+  {
+    delete source._image;
+    source._image = NULL;
+  }
 }
 
 ChatBot &ChatBot::operator=(ChatBot &&source) noexcept
@@ -95,6 +101,12 @@ ChatBot &ChatBot::operator=(ChatBot &&source) noexcept
     source._currentNode = nullptr;
     source._rootNode = nullptr;
     source._chatLogic = nullptr;
+
+    if (source._image != NULL)  // Attention: wxWidgets used NULL and not nullptr
+    {
+      delete source._image;
+      source._image = NULL;
+    }
   }
 
   return *this;
