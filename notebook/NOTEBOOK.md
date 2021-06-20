@@ -38,6 +38,7 @@ Some notes taken during this C++ course.
   * [Lvalues and Rvalues](#lvalues-and-rvalues)
   * [Move semantics](#move-semantics)
 * [Passing smart pointers](#passing-smart-pointers)
+* [Processes and Threads](#processes-and-threads)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -326,7 +327,7 @@ There are two important terms which are often used in the context of caches and 
 ![](images/process_memory_model.png)
 
 1. The **stack** is a contiguous memory block with a fixed maximum size. If a program exceeds this size, it will crash. The stack is used for storing automatically allocated variables such as local variables or function parameters. If there are multiple threads in a program, then each thread has its own stack memory. New memory on the stack is allocated when the path of execution enters a scope and freed again once the scope is left. It is important to know that the stack is managed "automatically" by the compiler, which means we do not have to concern ourselves with allocation and deallocation.
-2. The **heap** (also called "free store" in C++) is where data with dynamic storage lives. It is shared among multiple threads in a program, which means that memory management for the heap needs to take concurrency into account. In general, managing memory on the heap is more (computationally) expensive for the operating system, which makes it slower than stack memory. f memory is allocated on the heap, it is the programmer’s responsibility to free it again when it is no longer needed. If the programmer manages the heap poorly or not at all, there will be trouble.
+2. The **heap** (also called "free store" in C++) is where data with dynamic storage lives. It is shared among multiple threads in a program, which means that memory management for the heap needs to take concurrency into account. In general, managing memory on the heap is more (computationally) expensive for the operating system, which makes it slower than stack memory. f memory is allocated on the heap, it is the programmer's responsibility to free it again when it is no longer needed. If the programmer manages the heap poorly or not at all, there will be trouble.
 3. The **BBS** (Block Started by Symbol) segment is used in many compilers and linkers for a segment that contains global and static variables that are initialized with zero values. This memory area is suitable, for example, for arrays that are not initialized with predefined values.
 4. The **Data** segment serves the same purpose as the BSS segment with the major difference being that variables in the Data segment have been initialized with a value other than zero. Memory for variables in the Data segment (and in BSS) is allocated once when a program is run and persists throughout its lifetime.
 
@@ -364,7 +365,7 @@ Properties of heap memory:
 4. Unlike the stack, the heap is shared among multiple threads, which means that memory management for the heap needs to take concurrency into account as several threads might compete for the same memory resource.
 5. When memory is allocated or deallocated on the stack, the stack pointer is simply shifted upwards or downwards. Due to the sequential structure of stack memory management, stack memory can be managed (by the operating system) easily and securely. With heap memory, allocation and deallocation can occur arbitrarily, depending on the lifetime of the variables. This can result in fragmented memory over time, which is much more difficult and expensive to manage.
 
-Memory on the heap can become fragmented and a classic symptom is that you try to allocate a large block and you can’t, even though you appear to have enough memory free. On systems with virtual memory however, this is less of a problem, because large allocations only need to be contiguous in virtual address space, not in physical address space.
+Memory on the heap can become fragmented and a classic symptom is that you try to allocate a large block and you can't, even though you appear to have enough memory free. On systems with virtual memory however, this is less of a problem, because large allocations only need to be contiguous in virtual address space, not in physical address space.
 
 When memory is heavily fragmented however, memory allocations will likely take longer because the memory allocator has to do more work to find a suitable space for the new object.
 
@@ -531,3 +532,107 @@ else
 }
 
 ```
+
+### Processes and Threads
+A **process** (also called a task) is a computer program at runtime. It is comprised of the runtime environment provided by the operating system (OS), as well as of the embedded binary code of the program during execution. A process is controlled by the OS through certain actions with which it sets the process into one of several carefully defined states:
+
+![](images/process_states.png)
+
+* **Ready**: After its creation, a process enters the ready state and is loaded into main memory. The process now is ready to run and is waiting for CPU time to be executed. Processes that are ready for execution by the CPU are stored in a queue managed by the OS.
+* **Running**: The operating system has selected the process for execution and the instructions within the process are executed on one or more of the available CPU cores.
+Blocked : A process that is blocked is one that is waiting for an event (such as a system resource becoming available) or the completion of an I/O operation.
+* **Terminated**: When a process completes its execution or when it is being explicitly killed, it changes to the "terminated" state. The underlying program is no longer executing, but the process remains in the process table as a "zombie process". When it is finally removed from the process table, its lifetime ends.
+* **Ready suspended**: A process that was initially in ready state but has been swapped out of main memory and placed onto external storage is said to be in suspend ready state. The process will transition back to ready state whenever it is moved to main memory again.
+* **Blocked suspended**: A process that is blocked may also be swapped out of main memory. It may be swapped back in again under the same conditions as a "ready suspended" process. In such a case, the process will move to the blocked state, and may still be waiting for a resource to become available.
+
+Processes are managed by the scheduler of the OS. The scheduler can either let a process run until it ends or blocks (non-interrupting scheduler), or it can ensure that the currently running process is interrupted after a short period of time. The scheduler can switch back and forth between different active processes (interrupting scheduler), alternately assigning them CPU time. The latter is the typical scheduling strategy of any modern operating system.
+
+Since the administration of processes is computationally taxing, operating systems support a more resource-friendly way of realizing concurrent operations: the threads.
+
+A **thread** represents a concurrent execution unit within a process. In contrast to full-blown processes as described above, threads are characterized as light-weight processes (LWP). These are significantly easier to create and destroy: In many systems the creation of a thread is up to 100 times faster than the creation of a process. This is especially advantageous in situations, when the need for concurrent operations changes dynamically.
+
+![](images/threads.png)
+
+Threads exist within processes and share their resources. As illustrated by the figure above, a process can contain several threads or - if no parallel processing is provided for in the program flow - only a single thread.
+
+A major difference between a process and a thread is that each process has its own address space, while a thread does not require a new address space to be created. All the threads in a process can access its shared memory. Threads also share other OS dependent resources such as processors, files, and network connections. As a result, the management overhead for threads is typically less than for processes. Threads, however, are not protected against each other and must carefully synchronize when accessing the shared process resources to avoid conflicts.
+
+Similar to processes, threads exist in different states, which are illustrated in the figure below:
+
+![](images/threads_states.png)
+
+* **New**: A thread is in this state once it has been created. Until it is actually running, it will not take any CPU resources.
+* **Runnable**: In this state, a thread might actually be running or it might be ready to run at any instant of time. It is the responsibility of the thread scheduler to assign CPU time to the thread.
+* **Blocked**: A thread might be in this state, when it is waiting for I/O operations to complete. When blocked, a thread cannot continue its execution any further until it is moved to the runnable state again. It will not consume any CPU time in this state. The thread scheduler is responsible for reactivating the thread.
+
+Threads definition, initialization (with an instance) and methods:
+```cpp
+#include <iostream>
+#include <thread>
+
+std::cout << "Main thread id = " << std::this_thread::get_id() << "\n";
+unsigned int nCores = std::thread::hardware_concurrency();
+std::cout << "This machine supports concurrency with " << nCores << " cores available\n"s;
+// Add an extra pair of parantheses
+std::thread t1( (Vehicle()) );
+// Wait till t1 finishes
+t1.join();
+// Use copy initialization
+std::thread t2 = std::thread( Vehicle() );
+// Don't care about t2 anymore, it cannot be joined anymore
+t2.detach();
+// Use uniform initialization with braces
+std::thread t3{ Vehicle() };
+// simulate work
+std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+```
+
+A **Lambda** is a function object (a "functor"), so it has a type and can be stored and passed around. Its result object is called a "closure", which can be called using the operator ().
+
+A lambda formally consists of three parts: a capture list [] , a parameter list () and a main part {}, which contains the code to be executed when the Lambda is called. Note that in principal all parts could be empty.
+
+The capture list []: By default, variables outside of the enclosing {} around the main part of the Lambda can not be accessed. By adding a variable to the capture list however, it becomes available within the Lambda either as a copy or as a reference. The captured variables become a part of the Lambda.
+
+By default, variables in the capture block can not be modified within the Lambda. Using the keyword "mutable" allows to modify the parameters captured by copy, and to call their `non-const` member functions within the body of the Lambda. The following code examples show several ways of making the external variable "id" accessible within a Lambda.
+
+Lambda does not exist at runtime. The runtime effect of a Lambda is the generation of an object, which is known as closure. The difference between a Lambda and the corresponding closure is similar to the distinction between a class and an instance of the class. A class exists only in the source code while the objects created from it exist at runtime.
+
+```cpp
+// create lambdas
+int id = 0;
+// 'id' is captured by reference (inmutable)
+auto f0 = [&id]() { std::cout << "f0 ID = " << id << "\n"; };
+
+// Error: 'id' cannot be accessed
+//auto f0 = []() { std::cout << "ID = " << id << "\n"; };
+
+// 'id' is captured by value (mutable)
+auto f1 = [id]() mutable { std::cout << "f1 ID = " << ++id << "\n"; };
+// Call the closure and execute the code within the Lambda
+f1();
+id++;
+// 'id' is captured by reference (mutable)
+auto f2 = [&id]() mutable { std::cout << "f2 ID = " << ++id << "\n"; };
+f2();
+// Error, 'id' may not be modified
+//auto f3 = [id]() { std::cout << "ID = " << ++id << "\n"; };
+
+// 'id' may be modified
+auto f3 = [](const int id) { std::cout << "f3 ID = " << id << "\n"; };
+f3(++id);
+
+f0();
+
+// ------------------------ OUTPUT ------------------------
+// f1 ID = 1
+// f2 ID = 2
+// f3 ID = 3
+// f0 ID = 3
+```
+
+The Lambda object has its own scope and lifetime which may, in some circumstances, be different to those objects it has 'captured'. Programmers need to take special care when capturing local objects by reference because a Lambda's lifetime may exceed the lifetime of its capture list: It must be ensured that the object to which the reference points is still in scope when the Lambda is called. This is especially important in multi-threading programs.
+
+In contrast to synchronous programs, the main program can continue with its line of execution without the need to wait for the parallel task to complete. The following figure illustrates this difference.
+
+![](images/sync_async.png)
