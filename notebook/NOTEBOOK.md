@@ -39,6 +39,9 @@ Some notes taken during this C++ course.
   * [Move semantics](#move-semantics)
 * [Passing smart pointers](#passing-smart-pointers)
 * [Processes and Threads](#processes-and-threads)
+  * [Promises and Futures](#promises-and-futures)
+  * [Threads vs Tasks](#threads-vs-tasks)
+  * [Data races](#data-races)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -534,6 +537,10 @@ else
 ```
 
 ### Processes and Threads
+In contrast to synchronous programs, the main program can continue with its line of execution without the need to wait for the parallel task to complete. The following figure illustrates this difference.
+
+![](images/sync_async.png)
+
 A **process** (also called a task) is a computer program at runtime. It is comprised of the runtime environment provided by the operating system (OS), as well as of the embedded binary code of the program during execution. A process is controlled by the OS through certain actions with which it sets the process into one of several carefully defined states:
 
 ![](images/process_states.png)
@@ -554,6 +561,8 @@ A **thread** represents a concurrent execution unit within a process. In contras
 ![](images/threads.png)
 
 Threads exist within processes and share their resources. As illustrated by the figure above, a process can contain several threads or - if no parallel processing is provided for in the program flow - only a single thread.
+
+Thread objects do not have a copy constructor and thus can not be duplicated. So when adding threads to a vector `emplace_back()` has to be used, which uses move semantics internally, instead of `push_back()`, which makes a copy.
 
 A major difference between a process and a thread is that each process has its own address space, while a thread does not require a new address space to be created. All the threads in a process can access its shared memory. Threads also share other OS dependent resources such as processors, files, and network connections. As a result, the management overhead for threads is typically less than for processes. Threads, however, are not protected against each other and must carefully synchronize when accessing the shared process resources to avoid conflicts.
 
@@ -624,7 +633,7 @@ f3(++id);
 
 f0();
 
-// ------------------------ OUTPUT ------------------------
+
 // f1 ID = 1
 // f2 ID = 2
 // f3 ID = 3
@@ -633,6 +642,302 @@ f0();
 
 The Lambda object has its own scope and lifetime which may, in some circumstances, be different to those objects it has 'captured'. Programmers need to take special care when capturing local objects by reference because a Lambda's lifetime may exceed the lifetime of its capture list: It must be ensured that the object to which the reference points is still in scope when the Lambda is called. This is especially important in multi-threading programs.
 
-In contrast to synchronous programs, the main program can continue with its line of execution without the need to wait for the parallel task to complete. The following figure illustrates this difference.
+Instead of lambda, the variadic template can be used for passing arguments:
+```cpp
+#include <iostream>
+#include <thread>
+#include <string>
 
-![](images/sync_async.png)
+void printName(std::string name, int waitTime)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+  std::cout << "Name (from Thread) = " << name << std::endl;
+}
+
+void printName(std::string &name, int waitTime)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+  name += " (from Thread)";
+  std::cout << name << std::endl;
+}
+
+int main()
+{
+  std::string name("MyThread");
+  std::string name1 = "MyThread1";
+  std::string name2 = "MyThread2";
+
+  // starting threads using value-copy and move semantics
+  std::thread t1(printName, name1, 50);
+  // name2 will not exist after joining
+  std::thread t2(printName, std::move(name2), 100);
+  // pass by reference
+  std::thread t(printName, std::ref(name), 50);
+
+  // wait for threads before returning
+  t1.join();
+  t2.join();
+
+  // print name from main
+  std::cout << "Name (from Main) = " << name1 << std::endl;
+  std::cout << "Name (from Main) = " << name2 << std::endl;
+
+  return 0;
+}
+
+// ------------------------ OUTPUT ------------------------
+// Name (from Thread) = MyThread1
+// Name (from Thread) = MyThread2
+// Name (from Main) = MyThread1
+// Name (from Main) =
+```
+
+And threads with member functions:
+```cpp
+#include <iostream>
+#include <thread>
+
+class Vehicle
+{
+public:
+  Vehicle() : _id(0) {}
+  void addID(int id) { _id = id; }
+  void printID()
+  {
+    std::cout << "Vehicle ID=" << _id << std::endl;
+  }
+
+private:
+  int _id;
+};
+
+int main()
+{
+  // create thread
+  Vehicle v1, v2;
+  std::thread t1 = std::thread(&Vehicle::addID, v1, 1); // call member function on object v
+  std::thread t2 = std::thread(&Vehicle::addID, &v2, 2); // call member function on object v
+
+  // wait for thread to finish
+  t1.join();
+  t2.join();
+
+  // print Vehicle id
+  v1.printID();
+  v2.printID();
+
+  // In order not to have to ensure the existence of the Vehicle
+  std::shared_ptr<Vehicle> v(new Vehicle);
+  std::thread t = std::thread(&Vehicle::addID, v, 1);
+  // wait for thread to finish
+  t.join();
+  // print Vehicle id
+  v->printID();
+
+  return 0;
+}
+
+// ------------------------ OUTPUT ------------------------
+// Vehicle ID=0
+// Vehicle ID=2
+```
+
+#### Promises and Futures
+Promises and futures are meant for single use only and to be able to pass the information from the worker threads to the main thread. n order to achieve this, the threads need to adhere to a strict synchronization protocol. There is a such a mechanism available in the C++ standard that we can use for this purpose. This mechanism acts as a single-use channel between the threads. The sending end of the channel is called "promise" while the receiving end is called "future".
+
+In the C++ standard, the class template `std::promise` provides a convenient way to store a value or an exception that will acquired asynchronously at a later time via a `std::future` object.
+
+```cpp
+#include <iostream>
+#include <thread>
+#include <future>
+
+void modifyMessage(std::promise<std::string> && prms, std::string message)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(4000));// simulate work
+  std::string modifiedMessage = message + " has been modified";
+  prms.set_value(modifiedMessage);
+}
+
+int main()
+{
+  // define message
+  std::string messageToThread = "My Message";
+  // create promise and future
+  std::promise<std::string> prms;
+  std::future<std::string> ftr = prms.get_future();
+  // start thread and pass promise as argument
+  std::thread t(modifyMessage, std::move(prms), messageToThread);
+  // print original message to console
+  std::cout << "Original message from main(): " << messageToThread << std::endl;
+  // retrieve modified message via future and print to console
+  std::string messageFromThread = ftr.get();
+  std::cout << "Modified message from thread(): " << messageFromThread << std::endl;
+  // thread barrier
+  t.join();
+
+  return 0;
+}
+```
+
+There are some situations where it might be interesting to separate the waiting for the content from the actual retrieving and it can be achieved using the method `wait_for`:
+```cpp
+#include <iostream>
+#include <thread>
+#include <future>
+#include <cmath>
+
+void computeSqrt(std::promise<double> &&prms, double input)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(2000));// simulate work
+  double output = sqrt(input);
+  prms.set_value(output);
+}
+
+int main()
+{
+  // define input data
+  double inputData = 42.0;
+  // create promise and future
+  std::promise<double> prms;
+  std::future<double> ftr = prms.get_future();
+  // start thread and pass promise as argument
+  std::thread t(computeSqrt, std::move(prms), inputData);
+  // Student task STARTS here
+  // wait for result to become available
+  auto status = ftr.wait_for(std::chrono::milliseconds(1000));
+  if (status == std::future_status::ready) // result is ready
+  {
+    std::cout << "Result = " << ftr.get() << std::endl;
+  }
+  //  timeout has expired or function has not yet been started
+  else if (status == std::future_status::timeout || status == std::future_status::deferred)
+  {
+    std::cout << "Result unavailable" << std::endl;
+  }
+  // Student task ENDS here    
+  // thread barrier
+  t.join();
+
+  return 0;
+}
+```
+
+The future-promise communication channel may also be used for passing exceptions and the function `std::current_exception` allows to easily retrieve te exception which has been thrown:
+```cpp
+#include <iostream>
+#include <thread>
+#include <future>
+#include <cmath>
+#include <memory>
+
+void divideByNumber(std::promise<double> &&prms, double num, double denom)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(500)); // simulate work
+  try
+  {
+    if (denom == 0)
+    {
+      throw std::runtime_error("Exception from thread: Division by zero!");
+    }
+    else
+    {
+      prms.set_value(num / denom);
+    }
+  }
+  catch (...)
+  {
+    prms.set_exception(std::current_exception());
+  }
+}
+
+int main()
+{
+  // create promise and future
+  std::promise<double> prms;
+  std::future<double> ftr = prms.get_future();
+  // start thread and pass promise as argument
+  double num = 42.0, denom = 0.0;
+  std::thread t(divideByNumber, std::move(prms), num, denom);
+  // retrieve result within try-catch-block
+  try
+  {
+    double result = ftr.get();
+    std::cout << "Result = " << result << std::endl;
+  }
+  catch (std::runtime_error e)
+  {
+    std::cout << e.what() << std::endl;
+  }
+  // thread barrier
+  t.join();
+
+  return 0;
+}
+
+```
+
+#### Threads vs Tasks
+Starting threads with async (using tasks) is much less cumbersome than using the promise-future approach:
+```cpp
+#include <iostream>
+#include <thread>
+#include <future>
+#include <cmath>
+#include <memory>
+
+double divideByNumber(double num, double denom)
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(500)); // simulate work
+  if (denom == 0)
+  {
+    throw std::runtime_error("Exception from thread: Division by zero!");
+  }
+  return num / denom;
+}
+
+int main()
+{
+  // use async to start a task
+  double num = 42.0, denom = 2.0;
+  std::future<double> ftr = std::async(divideByNumber, num, denom);
+  // retrieve result within try-catch-block
+  try
+  {
+    double result = ftr.get();
+    std::cout << "Result = " << result << std::endl;
+  }
+  catch (std::runtime_error e)
+  {
+    std::cout << e.what() << std::endl;
+  }
+  return 0;
+}
+```
+The main different between `std::thread` and `std::async` is that the system decides whether the associated function should be run asynchronously or synchronously. It can be influenced to execute synchronously or asynchronously using `std::launch`.
+```cpp
+std::future<double> ftr = std::async(std::launch::deferred, divideByNumber, num, denom);
+```
+It enforces the synchronous execution.
+
+Internally, `std::async` creates a promise, gets a future from it and runs a template function that takes the promise, calls our function and then either sets the value or the exception of that promise - depending on function behavior. The code used internally by `std::async` is more or less identical to the code we used in the previous example, except that this time it has been generated by the compiler and it is hidden from us - which means that the code we write appears much cleaner and leaner. Also, `std::async` makes it possible to control the amount of concurrency by passing an optional launch parameter, which enforces either synchronous or asynchronous behavior. This ability, especially when left to the system, allows us to prevent an overload of threads, which would eventually slow down the system as threads consume resources for both management and communication. If we were to use too many threads, the increased resource consumption would outweigh the advantages of parallelism and slow down the program. By leaving the decision to the system, we can ensure that the number of threads is chosen in a carefully balanced way that optimizes runtime performance by looking at the current workload of the system and the multi-core architecture of the system.
+
+The syste decides based on the cores/processors as well as by work-steading queues.
+
+![](images/task_distribution.png)
+
+It shows the principal of task distribution on a multi-core system using work stealing queues.
+
+![](images/task_distribution2.png)
+
+A work distribution in this manner can only work, when parallelism is explicitly described in the program by the programmer. If this is not the case, work-stealing will not perform effectively.
+
+With tasks, the system takes care of many details (e.g. join). With threads, the programmer is responsible for many details. As far as resources go, threads are usually more heavy-weight as they are generated by the operating system (OS). It takes time for the OS to be called and to allocate memory / stack / kernel data structures for the thread. Also, destroying the thread is expensive. Tasks on the other hand are more light-weight as they will be using a pool of already created threads (the "thread pool").
+
+Threads and tasks are used for different problems. Threads have more to do with latency. When you have functions that can block (e.g. file input, server connection), threads can avoid the program to be blocked, when e.g. the server is waiting for a response. Tasks on the other hand focus on throughput, where many operations are executed in parallel.
+
+Summary:
+
+![](images/threads_vs_tasks.png)
+
+#### Data races
