@@ -42,6 +42,8 @@ Some notes taken during this C++ course.
   * [Promises and Futures](#promises-and-futures)
   * [Threads vs Tasks](#threads-vs-tasks)
   * [Data races](#data-races)
+  * [Mutexes and locks](#mutexes-and-locks)
+  * [Monitor object pattern](#monitor-object-pattern)
 
 ### Compilation
 C++ is a compiled programming language, which means that programmers use a program to compile their human-readable source code into machine-readable object and executable files. The program that performs this task is called a compiler.
@@ -941,3 +943,38 @@ Summary:
 ![](images/threads_vs_tasks.png)
 
 #### Data races
+They occur, when two concurrent threads are accessing the same memory location while at least one of them is modifying. In this scenario, the value at the memory location is completely undefined. The result can be anything from a crash to a security breach.
+
+When a standard copy constructor makes a copy of all data members, including pointers to objects, shallow copy happens. We would expected a deep copy of the object through a copy of the data to which the pointer refers.
+
+#### Mutexes and locks
+1. Include the <mutex> header
+2. Create an `std::mutex`
+3. Lock the mutex using `lock()` before read/write is called
+4. Unlock the mutex after the read/write operation is finished using `unlock()`
+
+Mutex types:
+* `mutex`: provides the core functions lock() and unlock() and the non-blocking try_lock() method that returns if the mutex is not available.
+* `recursive_mutex`: allows multiple acquisitions of the mutex from the same thread.
+* `timed_mutex`: similar to mutex, but it comes with two more methods try_lock_for() and try-lock_until() that try to acquire the mutex for a period of time or until a moment in time is reached.
+* `recursive_timed`: is a combination of timed_mutex and recursive_mutex
+
+`std::lock_guard<std::mutex>` keeps an associated mutex locked during the entire object life time and it guarantees exception safety.
+
+`std::unique_lock<std::mutex>`:
+1. ...construct an instance without an associated mutex using the default constructor
+2. ...construct an instance with an associated mutex while leaving the mutex unlocked at first using the deferred-locking constructor
+3. ...construct an instance that tries to lock a mutex, but leaves it unlocked if the lock failed using the try-lock constructor
+4. ...construct an instance that tries to acquire a lock for either a specified time period or until a specifies point in time
+
+The deadlock situation where two mutexes are accessed simultaneously will still occur.
+
+```cpp
+std::mutex mutx;
+std::lock(mutx);
+std::lock_guard<std::mutex> locker(mutx, std::adopt_lock)
+```
+`std::adopt_lock` option allows us to use std::lock_guard on an already locked mutex.
+
+# Monitor object pattern
+It synchronizes concurrent method execution to ensure that only one method at a time runs withing an object. It also allows an object's methods to cooperatively schedule their execution sequences.
