@@ -30,6 +30,9 @@ private:
 
 class TrafficLight : public TrafficObject
 {
+  static const int MIN = 4;
+  static const int MAX = 6;
+
 public:
   // constructor / desctructor
   TrafficLight();

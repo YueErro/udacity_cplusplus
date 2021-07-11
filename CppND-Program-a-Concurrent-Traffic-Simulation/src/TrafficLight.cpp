@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <future>
 #include "TrafficLight.h"
 
 /* Implementation of class "MessageQueue" */
@@ -28,6 +29,10 @@ TrafficLight::TrafficLight()
   _currentPhase = TrafficLightPhase::RED;
 }
 
+TrafficLight::~TrafficLight()
+{
+}
+
 void TrafficLight::waitForGreen()
 {
   while (true)
@@ -47,16 +52,31 @@ TrafficLightPhase TrafficLight::getCurrentPhase()
 
 void TrafficLight::simulate()
 {
-  // FP.2b : Finally, the private method „cycleThroughPhases“ should be started in a thread
-  // when the public method „simulate“ is called. To do this, use the thread queue in the base class.
+  threads.emplace_back(std::thread(&TrafficLight::cycleThroughPhases, this));
 }
 
 // virtual function which is executed in a thread
 void TrafficLight::cycleThroughPhases()
 {
-  // FP.2a : Implement the function with an infinite loop that measures the time between
-  // two loop cycles and toggles the current phase of the traffic light between red and
-  // green and sends an update method to the message queue using move semantics. The cycle
-  // duration should be a random value between 4 and 6 seconds. Also, the while-loop
-  // should use std::this_thread::sleep_for to wait 1ms between two cycles.
+  srand(time(NULL));
+  double cycle_duration = MIN + ((double)rand() / RAND_MAX) * (MAX - MIN);
+
+  std::chrono::duration<double> start_time =
+      std::chrono::system_clock::now().time_since_epoch();
+  std::chrono::duration<double> current_time;
+  std::chrono::duration<double> time_diff;
+  while (true)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    current_time = std::chrono::system_clock::now().time_since_epoch();
+    time_diff = current_time - start_time;
+    if (time_diff.count() >= cycle_duration)
+    {
+      _currentPhase = _currentPhase == TrafficLightPhase::RED ? TrafficLightPhase::GREEN :
+                                                                TrafficLightPhase::RED;
+      auto sentFuture = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send,
+                                   &_queue, std::move(_currentPhase));
+      sentFuture.wait();
+    }
+  }
 }
