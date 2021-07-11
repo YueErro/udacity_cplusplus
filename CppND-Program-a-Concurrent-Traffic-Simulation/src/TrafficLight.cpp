@@ -3,6 +3,9 @@
 #include <future>
 #include "TrafficLight.h"
 
+#define MIN 4.0
+#define MAX 6.0
+
 /* Implementation of class "MessageQueue" */
 template <typename T>
 T MessageQueue<T>::receive()
@@ -19,6 +22,7 @@ template <typename T>
 void MessageQueue<T>::send(T &&msg)
 {
   std::lock_guard<std::mutex> lock(_mutex);
+  _dequeue.clear();
   _dequeue.emplace_back(msg);
   _condition.notify_one();
 }
@@ -57,25 +61,32 @@ void TrafficLight::simulate()
 // virtual function which is executed in a thread
 void TrafficLight::cycleThroughPhases()
 {
-  srand(time(NULL));
-  double cycle_duration = MIN + ((double)rand() / RAND_MAX) * (MAX - MIN);
+  // Init our random generation between 4 and 6 seconds
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  std::uniform_real_distribution<double> dist(MIN, MAX);
 
-  std::chrono::duration<double> start_time =
-      std::chrono::system_clock::now().time_since_epoch();
+  // Initialize variables
+  double cycle_duration =
+      dist(mt);  // Duration of a single simulation cycle in seconds, is randomly chosen
+
   std::chrono::duration<double> current_time;
   std::chrono::duration<double> time_diff;
+  std::chrono::duration<double> start_time =
+      std::chrono::high_resolution_clock::now().time_since_epoch();
   while (true)
   {
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    current_time = std::chrono::system_clock::now().time_since_epoch();
+    current_time = std::chrono::high_resolution_clock::now().time_since_epoch();
     time_diff = current_time - start_time;
     if (time_diff.count() >= cycle_duration)
     {
       _currentPhase = _currentPhase == TrafficLightPhase::RED ? TrafficLightPhase::GREEN :
                                                                 TrafficLightPhase::RED;
-      auto sentFuture = std::async(std::launch::async, &MessageQueue<TrafficLightPhase>::send,
-                                   &_queue, std::move(_currentPhase));
-      sentFuture.wait();
+      _queue.send(std::move(_currentPhase));
+
+      cycle_duration = dist(mt);
+      start_time = std::chrono::high_resolution_clock::now().time_since_epoch();
     }
   }
 }
