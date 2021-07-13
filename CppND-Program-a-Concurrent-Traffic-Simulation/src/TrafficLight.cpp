@@ -62,9 +62,9 @@ void TrafficLight::simulate()
 void TrafficLight::cycleThroughPhases()
 {
   // Init our random generation between 4 and 6 seconds
-  std::random_device rd;
-  std::mt19937 mt(rd());
-  std::uniform_real_distribution<double> dist(MIN, MAX);
+  static std::random_device rd;
+  static std::mt19937 mt(rd());
+  static std::uniform_real_distribution<double> dist(MIN, MAX);
 
   // Initialize variables
   double cycle_duration =
