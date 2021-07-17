@@ -609,6 +609,16 @@ By default, variables in the capture block can not be modified within the Lambda
 
 Lambda does not exist at runtime. The runtime effect of a Lambda is the generation of an object, which is known as closure. The difference between a Lambda and the corresponding closure is similar to the distinction between a class and an instance of the class. A class exists only in the source code while the objects created from it exist at runtime.
 
+You can capture by both reference and value, which you can specify using & and = respectively:
+
+* `[&epsilon]` captures by reference
+* `[&]` captures all variables used in the lambda by reference
+* `[=]` captures all variables used in the lambda by value
+* `[&, epsilon]` captures variables like with `[&]`, but epsilon by value
+* `[=, &epsilon]` captures variables like with `[=]`, but epsilon by reference
+* `[this]` captures `*this` by reference of `&(*this)`
+* `[*this]` captures `*this` by value.
+
 ```cpp
 // create lambdas
 int id = 0;
@@ -879,6 +889,10 @@ int main()
 
 ```
 
+The promise future concept can only be used a single time, and for the purpose of our message queue, we need a signaling mechanism (condition variable) that can be reused as often as we need it.
+
+`std::condition_variable` has a method `wait()` (it only works with `unique_lock` and not `lock_guard`), which blocks, when it is called by a thread. The condition variable is kept blocked until it is released by another thread. The release works via the method `notify_one()` or the `notify_all()` method.
+
 #### Threads vs Tasks
 Starting threads with async (using tasks) is much less cumbersome than using the promise-future approach:
 ```cpp
@@ -972,7 +986,7 @@ The deadlock situation where two mutexes are accessed simultaneously will still 
 ```cpp
 std::mutex mutx;
 std::lock(mutx);
-std::lock_guard<std::mutex> locker(mutx, std::adopt_lock)
+std::lock_guard<std::mutex> lock(mutx, std::adopt_lock)
 ```
 `std::adopt_lock` option allows us to use std::lock_guard on an already locked mutex.
 
