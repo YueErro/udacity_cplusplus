@@ -25,7 +25,7 @@ catkin_package(INCLUDE_DIRS include
     geometry_msgs
     tf2
     tf2_geometry_msgs
-  DEPENDS Boost opencv
+  DEPENDS Boost OpenCV
 )
 
 include_directories(include)
@@ -46,10 +46,4 @@ add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(${PROJECT_NAME}_node path_manager ${catkin_LIBRARIES})
-
-#add_executable(robot_pose_pub_node
-#  src/robot_pose_publisher.cpp
-#)
-#add_dependencies(robot_pose_pub_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-#target_link_libraries(robot_pose_pub_node path_manager ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_node path_manager)
