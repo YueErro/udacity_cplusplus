@@ -37,6 +37,11 @@ protected:
   geometry_msgs::TransformStamped odom_to_base_;
   tf2::Transform odom_to_base_tf_;
 
+  /**
+   * @brief cmdVelCb - Callback of /cmd_vel topic that transforms from odom coordinate frame to
+   * robot's base coordinate frame in order to get the robot's pose in ROS world coordinate system
+   * @param msg - geometry_msgs/Twist message info containing the velocity commands
+   */
   void cmdVelCb(const geometry_msgs::TwistConstPtr &msg);
 };
 }  // namespace capstone

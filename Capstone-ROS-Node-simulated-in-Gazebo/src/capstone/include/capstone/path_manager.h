@@ -49,10 +49,27 @@ protected:
 
   boost::recursive_mutex lock_;
 
+  /**
+   * @brief isDoneCb - Callback of /is_done topic that creates an image showing the path
+   * the robot did until a true message is published into this topic. If false message is
+   * published it only removes the path done.
+   * @param msg - std_mesgs/Bool message data.
+   */
   void isDoneCb(const std_msgs::BoolConstPtr &msg);
+  /**
+   * @brief robotPoseCb - Callback of ROBOT_POSE_TOPIC topic that saves the robot's position
+   * in a vector of geometry_msgs/Points
+   * @param msg - geometry_msgs/PoseWithCovatianceStmped message data containing the robot pose.
+   */
   void robotPoseCb(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
 
 private:
+  /**
+   * @brief rosWorld2cvPixel - It converts ROS world coordinates to OpenCV pixel coordinates
+   * @param ros_wrold_x - X position in ROS world coordinate
+   * @param ros_world_y - Y position in ROS world coordinate
+   * @return OpenCV point of the corresponding ROS world coordinate position
+   */
   cv::Point rosWorld2cvPixel(double ros_wrold_x, double ros_world_y) const;
 };
 }  // namespace capstone
