@@ -11,6 +11,7 @@ RobotPosePublisher::RobotPosePublisher(ros::NodeHandle& nh)
   , robot_frame_("base_footprint")
   , listener_(tf_buffer_)
 {
+  ROS_INFO_STREAM("Ready to teleoperate the robot with the keyboard");
 }
 
 RobotPosePublisher::~RobotPosePublisher()

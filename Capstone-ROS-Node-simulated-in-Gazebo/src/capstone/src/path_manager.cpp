@@ -10,6 +10,7 @@ PathManager::PathManager(ros::NodeHandle &nh)
   , robot_pose_sub_(nh_.subscribe(ROBOT_POSE_TOPIC, 1, &PathManager::robotPoseCb, this))
 {
   robot_path_points_.emplace_back(robot_pose_point_);
+  ROS_INFO_STREAM("Ready to save in an image the path you will command the robot to do");
 }
 
 PathManager::~PathManager()
@@ -80,6 +81,9 @@ void PathManager::isDoneCb(const std_msgs::BoolConstPtr &msg)
     text_cv_point.x -= Y_AXIS_X_PADDING;
     text_cv_point.y -= AXIS_PADDING;
     cv::putText(img, "Y-axis", text_cv_point, cv::FONT_HERSHEY_DUPLEX, FONT_SCALE, GREEN);
+
+    cv::imshow("Robot's path", img);
+    cv::waitKey(0);
 
     ROS_INFO_STREAM("Saving the robot's path img in " << img_path);
     if (!cv::imwrite(img_path, img))
