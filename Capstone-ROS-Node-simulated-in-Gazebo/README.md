@@ -29,6 +29,24 @@ Capstone-ROS-Node-simulated-in-Gazebo
             └── robot_pose_publisher.cpp
 ```
 
+**`capstone_node.cpp`**
+
+It runs two different ROS nodes (explained below) in different threads and properly manages the callback messages.
+
+**`path_manager.h` and `path_manager.cpp`**
+
+It saves the robot's path during the execution to eventually save it in an image if the user wants and when he or she wants.
+
+It uses mutex when accessing the robot's pose to avoid other threads from accessing the same data and changing it at the same time.
+
+For saving the path the robot did, this class also takes care of changing of coordinate systems, in this case from ROS world coordinate system to OpenCV coordinate system, and indicates with nice colours in the image the start point and endpoint of the robot.
+
+**`robot_pose_publisher.h` and `robot_pose_publisher.cpp`**
+
+This class gets the input from the keyboard commands typed by the user to teleoperate the robot in simulation. It computes the necessary transformations of the odom coordinate frame to the robot's base coordinate frame to get the robot's pose in ROS world coordinate system.
+
+It also makes use of mutex when getting the keyboard commands, so that access to the data is safe.
+
 ### Addressed capstone rubric points
 This application satisfies all criteria for the README (the current file you are reading) and Compiling and Testing. In this case, `catkin build` of `catkin_tools` has been used instead of `cmake` and `make`.
 
@@ -73,16 +91,16 @@ Run the project:
 export TURTLEBOT3_MODEL=burger
 roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch
 
-# Terminal 2: Teleoperate turtlebot3
+# Terminal 2: Run the ROS node
+cd ~/udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo
+. devel/setup.bash
+rosrun capstone capstone_node
+
+# Terminal 3: Teleoperate turtlebot3
 . /opt/ros/noetic/setup.bash
 export TURTLEBOT3_MODEL=burger
 # Teleoperate the robot as you wish
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
-
-# Terminal 3: Run the ROS node
-cd ~/udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo
-. devel/setup.bash
-rosrun capstone capstone_node
 
 # Terminal 4: Save turtlebot3's path
 . /opt/ros/noetic/setup.bash
@@ -91,7 +109,10 @@ rostopic pub -1 /is_done std_msgs/Bool "data: true"
 ```
 
 ### Expected behavior
-An image is saved each and every time it is published `true` into `/is_done` ROS topic, alternatively, if `false` is published, the path done by the robot will be removed and not saved in the next image.
+Launch the Gazebo world with the turtlebot3 and run my capstone ROS node. Once ready, launch the teleop ROS package in order to be able to teleoperate the robot in simulation.
+Whenever you want, publish `true` as explained above, in the terminal 4, and the path that you commanded the robot to do will be saved in an image.
+
+Each and every time it is published `true` into `/is_done` ROS topic, the image of the robot's path will be pop up and if you press any key it will be saved. Alternatively, if `false` is published, the path done by the robot will be removed and not saved in the next image.
 
 The images of the path that the robot has done are saved at `/tmp` under `capstone_<data_time>.png` name.
 There is a demo video that can be downloaded from [here](https://github.com/YueErro/udacity_cplusplus/raw/master/Capstone-ROS-Node-simulated-in-Gazebo/demo.mp4).
