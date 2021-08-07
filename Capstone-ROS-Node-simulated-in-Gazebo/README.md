@@ -1,7 +1,7 @@
 # Capstone - ROS Node simulated in Gazebo
-This Capstone project about ROS Node simulated in Gazebo gathers the main principles learned throughout the Udacity Nanodegree Program called Become a C++ Developer. This project aims to demonstrate that i can independently create applications using a wide range of C++ features.
+This Capstone project about ROS Node simulated in Gazebo gathers the main principles learned throughout the Udacity Nanodegree Program called Become a C++ Developer. This project aims to demonstrate that I can independently create applications using a wide range of C++ features.
 
-The ROS package of this project allows us to save the path that the robot has done from point "X" to point "B" in a `.png` image. This package was built and tested in Ubuntu 20.04.2 LTS, ROS Noetic, Gazebo 11, Boost 1.71 and OpenCV 4.2.
+The ROS package of this project allows us to save the path that the robot has done from point "X" to point "B" in a `.png` image. This package was built and tested in Ubuntu 20.04.2 LTS (and Ubuntu 18.04.5 LTS), ROS Noetic (and Melodic), Gazebo 11 (and Gazebo 9), Boost 1.71 (and Boost 1.65) and OpenCV 4.2 (and OpenCV 3.2).
 
 ## Table of contents
 * [Project file and class structure](#Project-file-and-class-structure)
@@ -59,51 +59,56 @@ The Memory Management is taken into account as well, using references and pass-b
 Regarding the concurrency, the project uses multiple threads in execution for spinning ROS callbacks. It also uses locks to protect data shared across multiple threads in the project code.
 
 ### Dependecies
-* [ROS Noetic](http://wiki.ros.org/noetic/Installation)
+* [ROS Noetic/Melodic](https://wiki.ros.org/ROS/Installation)
 * [Gazebo](http://gazebosim.org/tutorials?tut=install_ubuntu)
 * [`catkin_tools`](https://catkin-tools.readthedocs.io/en/latest/installing.html) (Recommended)
 * [Boost](https://www.howtoinstall.me/ubuntu/18-04/libboost-all-dev/)
 * [OpenCV](https://learncybers.com/how-to-install-opencv-on-ubuntu-20-04/#Installing_OpenCV_from_the_Ubuntu_Repository)
 * turtlebot3: gazebo and teleop
 
-_This ROS node could work using different versions and distros but it has been tested in the ones mentioned at the top._
-
 ### Requirements
 The following two debian packages have to be installed in order to be able to run the project:
 ```sh
+# export ROS_DISTRO=melodic
+export ROS_DISTRO=noetic
 sudo apt-get update
-sudo apt-get install ros-noetic-turtlebot3-gazebo ros-noetic-turtlebot3-teleop
+sudo apt-get install ros-$ROS_DISTRO-turtlebot3-gazebo ros-$ROS_DISTRO-turtlebot3-teleop
 ```
-_Note that if you have a different ROS distribution installed you will have to change `noetic` to your corresponding one. This is applied to all the occurrences below._
+_Note that if you have ROS Melodic distribution installed you will have to export `melodic`. This is applied to all the occurrences below._
 
 ### Build and run the project
 Clone and build the project:
 ```sh
 cd && git clone https://github.com/YueErro/udacity_cplusplus.git
-. /opt/ros/noetic/setup.bash
+# export ROS_DISTRO=melodic
+export ROS_DISTRO=noetic
+source /opt/ros/$ROS_DISTRO/setup.bash
 cd udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo && catkin build
 ```
 
 Run the project:
 ```sh
 # Terminal 1: Launch turtlebot3 simulated robot in Gazebo
-. /opt/ros/noetic/setup.bash
+cd ~/udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo
+source devel/setup.bash
 export TURTLEBOT3_MODEL=burger
 roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch
 
 # Terminal 2: Run the ROS node
 cd ~/udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo
-. devel/setup.bash
+source devel/setup.bash
 rosrun capstone capstone_node
 
 # Terminal 3: Teleoperate turtlebot3
-. /opt/ros/noetic/setup.bash
+cd ~/udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo
+source devel/setup.bash
 export TURTLEBOT3_MODEL=burger
 # Teleoperate the robot as you wish
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 
 # Terminal 4: Save turtlebot3's path
-. /opt/ros/noetic/setup.bash
+cd ~/udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo
+source devel/setup.bash
 # Publish into the topic every time you want to save an image of the path that the robot did until that time
 rostopic pub -1 /is_done std_msgs/Bool "data: true"
 ```
