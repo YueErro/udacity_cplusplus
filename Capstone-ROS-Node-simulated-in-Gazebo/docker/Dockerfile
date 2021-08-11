@@ -2,6 +2,10 @@ FROM osrf/ros:noetic-desktop-full
 
 LABEL maintainer="Yue Erro <yue.trbj@gmail.com>"
 
+ARG REPO_WS=/udacity_cplusplus_ws
+RUN mkdir -p $REPO_WS/src
+WORKDIR $REPO_WS
+
 ARG IMAGE_NAME
 ENV IMG_NAME=$IMAGE_NAME
 
@@ -56,7 +60,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-$ROS_DISTRO-rosbash \
     ros-$ROS_DISTRO-turtlebot3-gazebo \
     ros-$ROS_DISTRO-turtlebot3-teleop \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && wget https://raw.githubusercontent.com/YueErro/udacity_cplusplus/master/Capstone-ROS-Node-simulated-in-Gazebo/docker/capstone_ros.rosinstall \
+  && vcs import src < capstone_ros.rosinstall
 
-RUN bash -c "source /opt/ros/noetic/setup.bash >> ~/.bashrc"
+RUN bash -c "source /opt/ros/noetic/setup.bash \
+  && catkin build \
+  && echo 'source $REPO_WS/devel/setup.bash' >> ~/.bashrc"
+
 ENTRYPOINT ["bash"]
