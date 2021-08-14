@@ -7,8 +7,12 @@ The ROS package of this project allows us to save the path that the robot has do
 * [Project file and class structure](#Project-file-and-class-structure)
 * [Addressed capstone rubric points](#Addressed-capstone-rubric-points)
 * [Dependencies](#Dependecies)
-* [Requirements](#Requirements)
-* [Build and run the project](#Build-and-run-the-project)
+* [Source base installation requirements](#Source-base-installation-requirements)
+* [Docker base installation requirements](#Docker-base-installation-requirements)
+* [Clone the project](#Clone-the-project)
+* [Build and run the project from source base installation](#Build-and-run-the-project-from-source-base-installation)
+* [Build and run docker base installation](#Build-and-run-docker-base-installation)
+  * [Run the project from docker base installation](#Run-the-project-from-docker-base-installation)
 * [Expected behavior](#Expected-behavior)
 
 ### Project file and class structure
@@ -66,7 +70,7 @@ Regarding the concurrency, the project uses multiple threads in execution for sp
 * [OpenCV](https://learncybers.com/how-to-install-opencv-on-ubuntu-20-04/#Installing_OpenCV_from_the_Ubuntu_Repository)
 * turtlebot3: gazebo and teleop
 
-### Requirements
+### Source base installation requirements
 The following two debian packages have to be installed in order to be able to run the project:
 ```sh
 # export ROS_DISTRO=melodic
@@ -76,10 +80,21 @@ sudo apt-get install ros-$ROS_DISTRO-turtlebot3-gazebo ros-$ROS_DISTRO-turtlebot
 ```
 _Note that if you have ROS Melodic distribution installed you will have to export `melodic`. This is applied to all the occurrences below._
 
-### Build and run the project
-Clone and build the project:
+### Docker base installation requirements
+The following debian package is needed in order to run the docker:
+```sh
+sudo apt-get update
+sudo apt-get install python3-rocker
+```
+
+### Clone the project
 ```sh
 cd && git clone https://github.com/YueErro/udacity_cplusplus.git
+```
+
+### Build and run the project from source base installation
+Build the project:
+```sh
 # export ROS_DISTRO=melodic
 export ROS_DISTRO=noetic
 source /opt/ros/$ROS_DISTRO/setup.bash
@@ -113,11 +128,50 @@ source devel/setup.bash
 rostopic pub -1 /is_done std_msgs/Bool "data: true"
 ```
 
+### Build and run docker base installation
+```sh
+cd udacity_cplusplus/Capstone-ROS-Node-simulated-in-Gazebo/docker
+# Build
+bash build.sh
+# Run according to your graphics card (Nvidia or integrated Intel)
+bash run.sh <nvidia/intel>
+```
+
+#### Run the project from docker base installation
+```sh
+terminator -u
+```
+Make use of the shortcuts of terminator (`Ctrl + Shift + o` and/or `Ctrl + Shift + e`) in order to open four different terminals.
+
+```sh
+# Terminal 1: Launch turtlebot3 simulated robot in Gazebo
+source devel/setup.bash
+export TURTLEBOT3_MODEL=burger
+roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch
+
+# Terminal 2: Run the ROS node
+source devel/setup.bash
+rosrun capstone capstone_node
+
+# Terminal 3: Teleoperate turtlebot3
+source devel/setup.bash
+export TURTLEBOT3_MODEL=burger
+# Teleoperate the robot as you wish
+roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
+
+# Terminal 4: Save turtlebot3's path
+source devel/setup.bash
+# Publish into the topic every time you want to save an image of the path that the robot did until that time
+rostopic pub -1 /is_done std_msgs/Bool "data: true"
+```
+
+You can visualize the saved image at /tmp with `feh capstone_<date_time>.png` command.
+
 ### Expected behavior
 Launch the Gazebo world with the turtlebot3 and run my capstone ROS node. Once ready, launch the teleop ROS package in order to be able to teleoperate the robot in simulation.
 Whenever you want, publish `true` as explained above, in the terminal 4, and the path that you commanded the robot to do will be saved in an image.
 
 Each and every time it is published `true` into `/is_done` ROS topic, the image of the robot's path will be pop up and if you press any key it will be saved. Alternatively, if `false` is published, the path done by the robot will be removed and not saved in the next image.
 
-The images of the path that the robot has done are saved at `/tmp` under `capstone_<data_time>.png` name.
+The images of the path that the robot has done are saved at `/tmp` under `capstone_<date_time>.png` name.
 There is a demo video that can be downloaded from [here](https://github.com/YueErro/udacity_cplusplus/raw/master/Capstone-ROS-Node-simulated-in-Gazebo/demo.mp4).
